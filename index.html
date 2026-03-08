@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мэндчилгээ</title>
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI, sans-serif;
+  background:linear-gradient(180deg,#0b0c2d,#4b0082);
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  padding:15px;
+}
+.card{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(.9);
+  opacity:0;
+  pointer-events:none;
+  transition:.5s;
+  width:95%;
+  max-width:420px;
+  text-align:center;
+  background:rgba(255,255,255,0.08);
+  padding:25px;
+  border-radius:22px;
+  backdrop-filter:blur(12px);
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.card.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+  pointer-events:auto;
+}
+.message{
+  background:rgba(255,255,255,0.15);
+  padding:18px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.3);
+  backdrop-filter:blur(6px);
+  box-shadow:0 0 12px rgba(255,105,180,.4), inset 0 0 8px rgba(255,255,255,.2);
+  font-size:17px;
+  line-height:1.6;
+  margin-bottom:20px;
+}
+button{
+  background:#ff69b4;
+  border:none;
+  padding:12px 20px;
+  border-radius:14px;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  margin:5px;
+}
+.choices button{
+  background:#fcd34d;
+}
+.result{
+  margin-top:12px;
+  font-style:italic;
+}
+.emoji{
+  position:absolute;
+  font-size:20px;
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<!-- Cards -->
+<div class="card show" id="card1">
+  <div class="message">Hi хөөрхөнөө чамд нэгэн мэндчилгээ ирсэн байна 💌</div>
+  <button onclick="nextCard(1)">Үзэх</button>
+</div>
+
+<div class="card" id="card2">
+  <div class="message">Энэ мэндчилгээг илгээсэн хүн өөрт чинь сэтгэлтэй юм шиг байна 😊</div>
+  <button onclick="nextCard(2)">Мэндчилгээг хүлээн авах</button>
+</div>
+
+<div class="card" id="card3">
+  <div class="message">
+    Яагаад ч юм өөрийг чинь харахаар дотор минь яг тэргэл сартай үдшийн тэнгэрийг ширтэж байгаа мэт үнэхээр тийм дотно мэдрэмжээр булагдаж нарт хорвоогийн нэгэн сайхан зүйлтэйгээ учирсан юм шиг л санагддаг шүү 😊
+    Чамд олон улсын эмэгтэйчүүдийн эрхийг хамгаалах өдрийн мэндийг хүргэе 😊 Өдөр бүр баяр баяслаар дүүрэн инээж яваарай 😊
+  </div>
+  <button onclick="nextCard(3)">Мэндчилгээг хүлээн авлаа</button>
+</div>
+
+<div class="card" id="card4">
+  <div class="message">
+    Хүндэтгэсэн Б.Нямдаваа<br><br>
+    Танд таалагдсан уу?
+  </div>
+  <div class="choices">
+    <button onclick="choose('Гоё байлаа')">Гоё байлаа</button>
+    <button onclick="choose('Үгүй')">Үгүй</button>
+    <button onclick="choose('Яахавдээ л юм')">Яахавдээ л юм</button>
+    <div class="result" id="result"></div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script type="module">
+// --- FIREBASE IMPORTS ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+// --- FIREBASE CONFIG ---
+const firebaseConfig = {
+  apiKey: "AIzaSyB-CCQdQiRVt6TSJte-avd-ypCun2o5XR0",
+  authDomain: "martiin8.firebaseapp.com",
+  projectId: "martiin8",
+  storageBucket: "martiin8.appspot.com",
+  messagingSenderId: "48366361450",
+  appId: "1:48366361450:web:b03ef7ab215cfa5b546313",
+  measurementId: "G-900HBSFR7Y"
+};
+
+// --- INIT FIREBASE ---
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+
+// --- CARD SWITCH ---
+window.nextCard = function(n){
+  document.getElementById("card"+n).classList.remove("show");
+  setTimeout(()=>{
+    document.getElementById("card"+(n+1)).classList.add("show");
+  },400);
+}
+
+// --- SAVE ANSWER ---
+window.choose = async function(text){
+  try{
+    await addDoc(collection(db,"answers"),{
+      answer:text,
+      time:new Date().toISOString()
+    });
+    // Тухайн хэрэглэгч л харах
+    document.getElementById("result").innerText = "Таны сонголт: " + text + " ❤️";
+  }catch(e){
+    console.error("Firebase error:", e);
+    document.getElementById("result").innerText = "Алдаа гарлаа ❌";
+  }
+}
+
+// --- EMOJI FALLING ---
+const emojis=["❤️","🌸","🌟","💖","✨"];
+function createEmoji(){
+  const e=document.createElement("div");
+  e.className="emoji";
+  e.innerText=emojis[Math.floor(Math.random()*emojis.length)];
+  e.style.left=Math.random()*100+"%";
+  e.style.top="-30px";
+  document.body.appendChild(e);
+
+  let y=-30;
+  let speed=1+Math.random()*2;
+  function fall(){
+    y+=speed;
+    e.style.top=y+"px";
+    if(y<window.innerHeight){
+      requestAnimationFrame(fall);
+    }else{
+      e.remove();
+    }
+  }
+  fall();
+}
+setInterval(createEmoji,300);
+</script>
+
+</body>
+</html>
